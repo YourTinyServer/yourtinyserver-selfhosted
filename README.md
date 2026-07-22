@@ -20,8 +20,8 @@ For ready-to-use hosted servers, visit [yourtinyserver.com](https://yourtinyserv
 
 ### Requirements
 
-- A clean Ubuntu 22.04 or 24.04 VPS using KVM virtualization
-- A real virtual machine, not an LXC or OpenVZ container
+- A clean Ubuntu 22.04 or 24.04 KVM VPS or bare-metal server
+- A real virtual machine or physical server, not an LXC or OpenVZ container
 - Root access
 - At least 20 GB of free storage
 - A DNS-only A record pointing a domain to the VPS public IPv4
