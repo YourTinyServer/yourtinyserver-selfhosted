@@ -113,11 +113,15 @@ if ! lxc project show "$PROJECT" --project default >/dev/null 2>&1; then
     -c features.images=true \
     -c features.profiles=true \
     -c features.storage.volumes=true \
-    -c features.networks=true
+    -c features.networks=false
 fi
 
-if ! lxc network show "$NETWORK" --project "$PROJECT" >/dev/null 2>&1; then
-  lxc network create "$NETWORK" --project "$PROJECT" \
+# Project instances inherit this managed bridge from the default project. This
+# also repairs projects created by installer versions that isolated networks.
+lxc project set "$PROJECT" features.networks=false --project default
+
+if ! lxc network show "$NETWORK" --project default >/dev/null 2>&1; then
+  lxc network create "$NETWORK" --project default \
     ipv4.address=10.242.0.1/24 ipv4.nat=true ipv6.address=auto ipv6.nat=true
 fi
 
