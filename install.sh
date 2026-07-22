@@ -44,7 +44,7 @@ read_value "Email for the TLS certificate" TLS_EMAIL
 
 valid_domain "$APP_DOMAIN" || die "Invalid dashboard domain."
 [[ "$ADMIN_USER" =~ ^[A-Za-z0-9._-]{3,32}$ ]] || die "Administrator username must contain 3-32 letters, numbers, dots, hyphens or underscores."
-[[ ${#ADMIN_PASSWORD} -ge 12 ]] || die "Administrator password must contain at least 12 characters."
+[[ ${#ADMIN_PASSWORD} -ge 12 ]] || die "Administrator password must contain at least 12 characters. Run 'bash $0' to retry."
 [[ "$TLS_EMAIL" == *@*.* ]] || die "Invalid TLS email."
 
 RESOLVED="$(getent ahostsv4 "$APP_DOMAIN" | awk 'NR==1 {print $1}')"
