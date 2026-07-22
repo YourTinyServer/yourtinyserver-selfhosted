@@ -50,7 +50,7 @@ async function staticFile(pathname, response) {
   response.writeHead(200, {
     "content-type": contentType,
     "content-length": details.size,
-    "cache-control": pathname === "/" ? "no-cache" : "public, max-age=3600",
+    "cache-control": "no-cache",
     "x-content-type-options": "nosniff",
     "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
   });
@@ -104,4 +104,3 @@ const server = createServer(async (request, response) => {
 server.listen(PORT, HOST, () => {
   console.log(`YourTinyServer Self-Hosted listening on http://${HOST}:${PORT}`);
 });
-
