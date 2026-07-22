@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>YourTinyServer Self-Hosted</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <strong>YourTinyServer</strong>
+        <span>Self-Hosted</span>
+      </div>
+      <a href="https://github.com/YourTinyServer/yourtinyserver-selfhosted" target="_blank" rel="noreferrer">GitHub</a>
+    </header>
+
+    <main>
+      <header class="page-header">
+        <div>
+          <h1>Instances</h1>
+          <p id="project-name">Loading LXD project...</p>
+        </div>
+        <button id="refresh-button" class="button button-secondary" type="button">Refresh</button>
+      </header>
+
+      <div id="notification" class="notification" role="status" hidden></div>
+
+      <section class="create-section" aria-labelledby="create-heading">
+        <h2 id="create-heading">Create instance</h2>
+        <form id="create-form">
+          <div class="field">
+            <label for="profile">Resource profile</label>
+            <select id="profile" name="profile" required disabled>
+              <option value="">Loading profiles...</option>
+            </select>
+          </div>
+          <div class="field field-readonly">
+            <span>Operating system</span>
+            <strong>Ubuntu 24.04 LTS</strong>
+          </div>
+          <button id="create-button" class="button button-positive" type="submit" disabled>Create instance</button>
+        </form>
+      </section>
+
+      <section class="instances-section" aria-labelledby="instances-heading">
+        <div class="section-header">
+          <h2 id="instances-heading">Managed instances</h2>
+          <span id="instance-count">0</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Profile</th>
+                <th>Status</th>
+                <th>IPv4</th>
+                <th>Created</th>
+                <th><span class="visually-hidden">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody id="instances-body">
+              <tr><td colspan="6" class="empty">Loading instances...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="delete-dialog">
+      <form method="dialog">
+        <h2>Delete instance?</h2>
+        <p><code id="delete-name"></code> and all of its data will be permanently deleted.</p>
+        <div class="dialog-actions">
+          <button class="button button-secondary" value="cancel">Cancel</button>
+          <button id="confirm-delete" class="button button-negative" value="confirm">Delete instance</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>
+
