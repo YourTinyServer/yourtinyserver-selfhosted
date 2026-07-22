@@ -202,6 +202,9 @@ server {
     auth_basic_user_file /etc/nginx/.htpasswd-yourtinyserver;
     proxy_pass http://127.0.0.1:3060;
     proxy_http_version 1.1;
+    proxy_connect_timeout 15s;
+    proxy_send_timeout 15m;
+    proxy_read_timeout 15m;
     proxy_set_header Host \$host;
     proxy_set_header X-Real-IP \$remote_addr;
     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
