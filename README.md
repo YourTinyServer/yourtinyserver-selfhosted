@@ -4,7 +4,7 @@ A small personal dashboard for creating permanent Ubuntu 24.04 LXC instances on 
 
 This edition has no Supabase, customer registration, email verification, payments, balance, invoices, renewals, expiration dates or background billing workers. LXD is the only source of instance state.
 
-For the commercial hosting platform, use [YourTinyServer Enterprise](https://github.com/YourTinyServer/yourtinyserver).
+For ready-to-use hosted servers, visit [yourtinyserver.com](https://yourtinyserver.com).
 
 ## Features
 
@@ -20,7 +20,8 @@ For the commercial hosting platform, use [YourTinyServer Enterprise](https://git
 
 ### Requirements
 
-- A clean Ubuntu 22.04 or 24.04 VPS
+- A clean Ubuntu 22.04 or 24.04 VPS using KVM virtualization
+- A real virtual machine, not an LXC or OpenVZ container
 - Root access
 - At least 20 GB of free storage
 - A DNS-only A record pointing a domain to the VPS public IPv4
