@@ -115,6 +115,7 @@ td.actions { text-align: right; }
 .status-running { background: #0e8420; color: #fff; }
 .status-stopped { background: #f99b11; color: #111; }
 .status-frozen { background: #06c; color: #fff; }
+.status-creating, .status-deleting, .status-working { background: #f99b11; color: #111; }
 .status-error { background: #c7162b; color: #fff; }
 
 dialog {
@@ -156,4 +157,3 @@ dialog::backdrop { background: rgb(0 0 0 / 55%); }
   .dialog-actions { flex-direction: column-reverse; }
   .dialog-actions .button { width: 100%; }
 }
-

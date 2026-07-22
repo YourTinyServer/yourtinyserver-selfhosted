@@ -3,7 +3,7 @@ import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createInstance, deleteInstance, listInstances, listProfiles } from "./lib/lxd.mjs";
+import { createInstance, createInstanceName, deleteInstance, listInstances, listOperations, listProfiles } from "./lib/lxd.mjs";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(ROOT, "public");
@@ -11,7 +11,8 @@ const PORT = Number(process.env.PORT || 3060);
 const HOST = process.env.HOST || "127.0.0.1";
 const PROJECT = process.env.LXD_PROJECT || "yourtinyserver-selfhosted";
 const APP_ORIGIN = process.env.APP_ORIGIN || `http://${HOST}:${PORT}`;
-let operationActive = false;
+let activeOperation = null;
+let lastOperation = null;
 
 const STATIC_FILES = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
@@ -64,33 +65,85 @@ const server = createServer(async (request, response) => {
     if (request.method === "GET" && await staticFile(url.pathname, response)) return;
 
     if (request.method === "GET" && url.pathname === "/api/overview") {
-      const [profiles, instances] = await Promise.all([listProfiles(PROJECT), listInstances(PROJECT)]);
-      return json(response, 200, { project: PROJECT, image: "Ubuntu 24.04 LTS", profiles, instances });
+      const [profiles, instances, lxdOperations] = await Promise.all([
+        listProfiles(PROJECT),
+        listInstances(PROJECT),
+        listOperations(PROJECT),
+      ]);
+      return json(response, 200, {
+        project: PROJECT,
+        image: "Ubuntu 24.04 LTS",
+        profiles,
+        instances,
+        activeOperation,
+        lastOperation,
+        lxdOperations,
+      });
     }
 
     if (request.method === "POST" && url.pathname === "/api/instances") {
       if (!sameOrigin(request)) return json(response, 403, { error: "Invalid request origin" });
-      if (operationActive) return json(response, 409, { error: "Another LXD operation is running" });
-      operationActive = true;
-      try {
-        const input = await body(request);
-        const name = await createInstance(PROJECT, input.profile);
-        return json(response, 201, { name });
-      } finally {
-        operationActive = false;
+      if (activeOperation) return json(response, 409, { error: `${activeOperation.name} is still ${activeOperation.status}` });
+      const lxdOperations = await listOperations(PROJECT);
+      if (lxdOperations.length) {
+        return json(response, 409, { error: "An LXD operation is already running. Its progress is shown in the instance list." });
       }
+      const input = await body(request);
+      const name = createInstanceName(input.profile);
+      const operation = {
+        id: `${name}:${Date.now()}`,
+        type: "create",
+        name,
+        profile: input.profile,
+        status: "creating",
+        startedAt: new Date().toISOString(),
+      };
+      activeOperation = operation;
+      lastOperation = null;
+      void createInstance(PROJECT, input.profile, name)
+        .then(() => {
+          lastOperation = { ...operation, status: "completed", completedAt: new Date().toISOString() };
+        })
+        .catch((error) => {
+          console.error(error);
+          lastOperation = {
+            ...operation,
+            status: "failed",
+            completedAt: new Date().toISOString(),
+            error: error instanceof Error ? error.message : "LXD instance creation failed",
+          };
+        })
+        .finally(() => {
+          if (activeOperation?.id === operation.id) activeOperation = null;
+        });
+      return json(response, 202, { name, status: "creating" });
     }
 
     const deletion = url.pathname.match(/^\/api\/instances\/(yts-[a-z0-9]+-[0-9]{17})$/);
     if (request.method === "DELETE" && deletion) {
       if (!sameOrigin(request)) return json(response, 403, { error: "Invalid request origin" });
-      if (operationActive) return json(response, 409, { error: "Another LXD operation is running" });
-      operationActive = true;
+      if (activeOperation) return json(response, 409, { error: `${activeOperation.name} is still ${activeOperation.status}` });
+      activeOperation = {
+        id: `${deletion[1]}:${Date.now()}`,
+        type: "delete",
+        name: deletion[1],
+        status: "deleting",
+        startedAt: new Date().toISOString(),
+      };
       try {
         await deleteInstance(PROJECT, deletion[1]);
+        lastOperation = { ...activeOperation, status: "completed", completedAt: new Date().toISOString() };
         return json(response, 200, { ok: true });
+      } catch (error) {
+        lastOperation = {
+          ...activeOperation,
+          status: "failed",
+          completedAt: new Date().toISOString(),
+          error: error instanceof Error ? error.message : "LXD instance deletion failed",
+        };
+        throw error;
       } finally {
-        operationActive = false;
+        activeOperation = null;
       }
     }
 
