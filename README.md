@@ -46,6 +46,21 @@ The installer asks only for the dashboard domain, administrator username, admini
 
 Open the displayed HTTPS URL and sign in with the administrator credentials. Select a profile to create an instance. Deleting an instance permanently removes its LXD storage.
 
+### SSH configuration prompt
+
+Ubuntu may report that `/etc/ssh/sshd_config` was locally modified and ask which version to keep. This commonly happens when a VPS provider has customized SSH access.
+
+Select **keep the local version currently installed**. Replacing it with the package maintainer's version can remove provider-specific settings and prevent a future SSH connection.
+
+After the package operation finishes, validate SSH without closing the current session:
+
+```bash
+sshd -t
+systemctl is-active ssh
+```
+
+Open a second SSH session and confirm that it works before closing the first one.
+
 ## Operations
 
 ```bash
