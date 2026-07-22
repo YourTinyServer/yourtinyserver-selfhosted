@@ -36,7 +36,7 @@ lxc.example.com  A  203.0.113.10
 Connect as root and run:
 
 ```bash
-apt update && apt install -y curl && apt upgrade -y
+apt-get update && apt-get install -y curl
 curl -fsSL https://raw.githubusercontent.com/YourTinyServer/yourtinyserver-selfhosted/main/install.sh \
   -o /tmp/yourtinyserver-selfhosted-install.sh
 bash /tmp/yourtinyserver-selfhosted-install.sh
