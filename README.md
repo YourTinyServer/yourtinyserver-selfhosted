@@ -50,6 +50,8 @@ The installer installs LXD, creates the network and profiles, configures Nginx a
 
 Open the displayed HTTPS URL and sign in with the administrator credentials. Select a profile to create an instance. Deleting an instance permanently removes its LXD storage.
 
+The first instance can take several minutes because LXD must download and cache the Ubuntu image. Keep the page open until the operation completes. Later instances usually start much faster.
+
 ### SSH configuration prompt
 
 Ubuntu may report that `/etc/ssh/sshd_config` was locally modified and ask which version to keep. This commonly happens when a VPS provider has customized SSH access.
@@ -64,6 +66,17 @@ systemctl is-active ssh
 ```
 
 Open a second SSH session and confirm that it works before closing the first one.
+
+### Instance creation response error
+
+If an older installation displays `JSON.parse: unexpected character` after creating the first instance, the reverse proxy timed out while LXD was still downloading Ubuntu. Check whether creation continued:
+
+```bash
+lxc list --project yourtinyserver-selfhosted
+journalctl -u yourtinyserver-selfhosted -n 100 --no-pager
+```
+
+Update the checkout and rerun the current installer to apply the longer proxy timeout. The operation is safe to retry; always refresh the instance list before submitting a second creation request.
 
 ## Operations
 

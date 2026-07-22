@@ -37,6 +37,19 @@ function statusLabel(status) {
   return `<span class="status status-${normalized}">${normalized}</span>`;
 }
 
+async function responseJson(response) {
+  const text = await response.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    if (response.status === 502 || response.status === 504) {
+      throw new Error(`The server returned HTTP ${response.status}. The LXD operation may still be running; wait a moment and refresh.`);
+    }
+    throw new Error(`The server returned an invalid response (HTTP ${response.status}).`);
+  }
+}
+
 function renderInstances(instances) {
   instanceCount.textContent = String(instances.length);
   if (!instances.length) {
@@ -65,7 +78,7 @@ function renderInstances(instances) {
 async function load(showError = true) {
   try {
     const response = await fetch("/api/overview", { headers: { accept: "application/json" } });
-    const data = await response.json();
+    const data = await responseJson(response);
     if (!response.ok) throw new Error(data.error || "Unable to load LXD state");
     projectName.textContent = data.project;
     const current = profileSelect.value;
@@ -94,7 +107,7 @@ createForm.addEventListener("submit", async (event) => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ profile: profileSelect.value }),
     });
-    const data = await response.json();
+    const data = await responseJson(response);
     if (!response.ok) throw new Error(data.error || "Unable to create instance");
     notify(`${data.name} was created.`, "positive");
     await load(false);
@@ -116,7 +129,7 @@ deleteDialog.addEventListener("close", async () => {
   notify(`Deleting ${name}...`, "information");
   try {
     const response = await fetch(`/api/instances/${encodeURIComponent(name)}`, { method: "DELETE" });
-    const data = await response.json();
+    const data = await responseJson(response);
     if (!response.ok) throw new Error(data.error || "Unable to delete instance");
     notify(`${name} was deleted.`, "positive");
     await load(false);
@@ -129,4 +142,3 @@ deleteDialog.addEventListener("close", async () => {
 
 void load();
 setInterval(() => { if (!pending && !deleteDialog.open) void load(false); }, 10_000);
-
