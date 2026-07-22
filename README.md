@@ -42,7 +42,11 @@ curl -fsSL https://raw.githubusercontent.com/YourTinyServer/yourtinyserver-selfh
 bash /tmp/yourtinyserver-selfhosted-install.sh
 ```
 
-The installer asks only for the dashboard domain, administrator username, administrator password and TLS email. It installs LXD, creates the network and profiles, configures Nginx authentication and obtains a Let's Encrypt certificate.
+The installer asks only for the dashboard domain, administrator username, password setup and TLS email. It can generate a secure administrator password automatically or accept one containing at least 12 characters. Generated passwords are displayed during setup and once more when installation completes.
+
+If validation or a command fails, the installer displays the exact `bash /path/to/install.sh` command needed to retry. It is safe to rerun after correcting the reported problem.
+
+The installer installs LXD, creates the network and profiles, configures Nginx authentication and obtains a Let's Encrypt certificate.
 
 Open the displayed HTTPS URL and sign in with the administrator credentials. Select a profile to create an instance. Deleting an instance permanently removes its LXD storage.
 
