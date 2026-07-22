@@ -24,7 +24,7 @@ For ready-to-use hosted servers, visit [yourtinyserver.com](https://yourtinyserv
 - A real virtual machine or physical server, not an LXC or OpenVZ container
 - Root access
 - At least 20 GB of free storage
-- A DNS-only A record pointing a domain to the VPS public IPv4
+- A DNS-only A record pointing a domain to the server's public IPv4
 - Ports `22`, `80` and `443` available
 
 Example:
@@ -54,7 +54,7 @@ The first instance can take several minutes because LXD must download and cache 
 
 ### SSH configuration prompt
 
-Ubuntu may report that `/etc/ssh/sshd_config` was locally modified and ask which version to keep. This commonly happens when a VPS provider has customized SSH access.
+Ubuntu may report that `/etc/ssh/sshd_config` was locally modified and ask which version to keep. This commonly happens when a hosting provider has customized SSH access.
 
 Select **keep the local version currently installed**. Replacing it with the package maintainer's version can remove provider-specific settings and prevent a future SSH connection.
 
