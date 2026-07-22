@@ -6,9 +6,19 @@ REPOSITORY="${YTS_REPOSITORY:-https://github.com/YourTinyServer/yourtinyserver-s
 PROJECT="yourtinyserver-selfhosted"
 NETWORK="ytsbr0"
 SERVICE="yourtinyserver-selfhosted"
+SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || printf '%s' "$0")"
+PASSWORD_WAS_GENERATED=false
 
 log() { printf '\n\033[1;32m==> %s\033[0m\n' "$*"; }
-die() { printf '\n\033[1;31mError: %s\033[0m\n' "$*" >&2; exit 1; }
+retry_hint() { printf "Retry with: bash '%s'\n" "$SCRIPT_PATH" >&2; }
+die() { printf '\n\033[1;31mError: %s\033[0m\n' "$*" >&2; retry_hint; exit 1; }
+on_error() {
+  local status=$? line="${1:-unknown}"
+  printf '\n\033[1;31mError: Installation stopped unexpectedly at line %s.\033[0m\n' "$line" >&2
+  retry_hint
+  exit "$status"
+}
+trap 'on_error "$LINENO"' ERR
 
 read_value() {
   local prompt="$1" variable="$2" value
@@ -39,12 +49,26 @@ SERVER_IPV4="$(public_ipv4)"
 printf '\nCreate a DNS-only A record pointing your dashboard domain to %s before continuing.\n\n' "$SERVER_IPV4"
 read_value "Dashboard domain (without https://)" APP_DOMAIN
 read_value "Administrator username" ADMIN_USER
-read_secret "Administrator password" ADMIN_PASSWORD
+read_value "Password setup ([1] generate - default, [2] enter your own)" PASSWORD_MODE
+case "${PASSWORD_MODE:-1}" in
+  1)
+    ADMIN_PASSWORD="$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+    PASSWORD_WAS_GENERATED=true
+    printf 'Generated administrator password: %s\n' "$ADMIN_PASSWORD"
+    printf 'Store this password securely. It will be shown once more after installation.\n'
+    ;;
+  2)
+    read_secret "Administrator password" ADMIN_PASSWORD
+    ;;
+  *)
+    die "Password setup must be 1 or 2."
+    ;;
+esac
 read_value "Email for the TLS certificate" TLS_EMAIL
 
 valid_domain "$APP_DOMAIN" || die "Invalid dashboard domain."
 [[ "$ADMIN_USER" =~ ^[A-Za-z0-9._-]{3,32}$ ]] || die "Administrator username must contain 3-32 letters, numbers, dots, hyphens or underscores."
-[[ ${#ADMIN_PASSWORD} -ge 12 ]] || die "Administrator password must contain at least 12 characters. Run 'bash $0' to retry."
+[[ ${#ADMIN_PASSWORD} -ge 12 ]] || die "Administrator password must contain at least 12 characters."
 [[ "$TLS_EMAIL" == *@*.* ]] || die "Invalid TLS email."
 
 RESOLVED="$(getent ahostsv4 "$APP_DOMAIN" | awk 'NR==1 {print $1}')"
@@ -200,4 +224,7 @@ curl -fsS -u "$ADMIN_USER:$ADMIN_PASSWORD" "https://$APP_DOMAIN/api/overview" >/
 printf '\n\033[1;32mYourTinyServer Self-Hosted is ready.\033[0m\n'
 printf 'Dashboard: https://%s\n' "$APP_DOMAIN"
 printf 'Username:  %s\n' "$ADMIN_USER"
+if [[ "$PASSWORD_WAS_GENERATED" == true ]]; then
+  printf 'Password:  %s\n' "$ADMIN_PASSWORD"
+fi
 printf '\nThe dashboard stores no customer, payment or billing data. LXD is the source of truth.\n'
