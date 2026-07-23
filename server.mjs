@@ -3,7 +3,7 @@ import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { listDomains, provisionDomain, refreshInstanceDomains, removeDomain, removeInstanceDomains } from "./lib/domains.mjs";
+import { listDomains, provisionDomain, refreshAllDomains, refreshInstanceDomains, removeDomain, removeInstanceDomains } from "./lib/domains.mjs";
 import { DISTRIBUTIONS } from "./lib/distributions.mjs";
 import {
   clearSessionCookie, createSessionCookie, resetAdministratorPassword, sessionFromRequest, verifyCredentials,
@@ -316,4 +316,7 @@ const server = createServer(async (request, response) => {
 attachTerminalGateway(server, { origin: APP_ORIGIN, project: PROJECT, authorize: sessionFromRequest });
 server.listen(PORT, HOST, () => {
   console.log(`YourTinyServer Self-Hosted listening on http://${HOST}:${PORT}`);
+  void refreshAllDomains(PROJECT).catch((error) => {
+    console.error("Unable to refresh domain routes:", error);
+  });
 });
