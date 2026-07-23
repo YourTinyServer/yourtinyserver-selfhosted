@@ -223,6 +223,11 @@ log "Configuring firewall and HTTPS"
 ufw allow OpenSSH
 ufw allow 80/tcp
 ufw allow 443/tcp
+ufw allow in on "$NETWORK" to any port 53 proto udp
+ufw allow in on "$NETWORK" to any port 53 proto tcp
+ufw allow in on "$NETWORK" to any port 67 proto udp
+ufw allow in on "$NETWORK" to any port 547 proto udp
+ufw route allow in on "$NETWORK"
 ufw --force enable
 certbot --nginx -d "$APP_DOMAIN" --non-interactive --agree-tos --email "$TLS_EMAIL" --redirect
 
