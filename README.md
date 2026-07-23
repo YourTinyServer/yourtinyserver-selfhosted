@@ -2,7 +2,7 @@
 
 A free, single-administrator LXD dashboard for your own Ubuntu server. It has no accounts, payments, billing, renewals or external database.
 
-Hosted plans are available at [yourtinyserver.com](https://yourtinyserver.com).
+Use paid version if you dont have a VPS or time: [yourtinyserver.com](https://yourtinyserver.com).
 
 ## Included
 
@@ -18,7 +18,8 @@ Hosted plans are available at [yourtinyserver.com](https://yourtinyserver.com).
 
 ## Requirements
 
-- Clean Ubuntu 22.04 or 24.04 KVM VPS or bare-metal server
+- Clean Ubuntu (22.04 LTS or newer but 24.04 LTS is recommended) only KVPS or bare-metal server
+- KVM Virtualization
 - Root access and at least 20 GB free storage
 - DNS-only A record pointing the dashboard domain to the server IPv4
 - Ports `22`, `80` and `443` available
