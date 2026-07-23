@@ -9,6 +9,7 @@ const elements = {
   snapshotCount: document.querySelector("#snapshot-count"), snapshotList: document.querySelector("#snapshot-list"),
   domainForm: document.querySelector("#domain-form"), domainName: document.querySelector("#domain-name"),
   domainPort: document.querySelector("#domain-port"), domainList: document.querySelector("#domain-list"),
+  reinstallForm: document.querySelector("#reinstall-form"), reinstallDistribution: document.querySelector("#reinstall-distribution"),
   deleteInstance: document.querySelector("#delete-instance"), dialog: document.querySelector("#confirm-dialog"),
   confirmTitle: document.querySelector("#confirm-title"), confirmDescription: document.querySelector("#confirm-description"),
   confirmAction: document.querySelector("#confirm-action"),
@@ -73,9 +74,9 @@ function renderControls(instance) {
 }
 
 function renderSnapshots(instance) {
-  elements.snapshotCount.textContent = `${instance.snapshots.length} / ${instance.snapshotLimit}`;
-  elements.snapshotName.disabled = pending || instance.snapshots.length >= instance.snapshotLimit;
-  elements.snapshotForm.querySelector("button").disabled = pending || instance.snapshots.length >= instance.snapshotLimit;
+  elements.snapshotCount.textContent = `${instance.snapshots.length} - Unlimited`;
+  elements.snapshotName.disabled = pending;
+  elements.snapshotForm.querySelector("button").disabled = pending;
   elements.snapshotList.innerHTML = instance.snapshots.length ? instance.snapshots.map((snapshot) => `
     <div class="list-item">
       <div><strong><code>${escapeHtml(snapshot.name)}</code></strong><small>Created ${escapeHtml(date(snapshot.createdAt))}</small></div>
@@ -105,6 +106,7 @@ function render(data) {
   document.querySelector("#metric-network-total").textContent = `${bytes(Number(metrics.networkRxBytes || 0) + Number(metrics.networkTxBytes || 0))} transferred`;
   elements.specifications.innerHTML = `
     <div><dt>Profile</dt><dd>${escapeHtml(instance.profile.name)}</dd></div>
+    <div><dt>Operating system</dt><dd>${escapeHtml(instance.distribution)}</dd></div>
     <div><dt>Resources</dt><dd>${escapeHtml(instance.profile.cpu)} vCPU - ${escapeHtml(instance.profile.memory)} RAM - ${escapeHtml(instance.profile.disk)} disk</dd></div>
     <div><dt>Private IPv4</dt><dd><code>${escapeHtml(instance.ipv4 || "Pending")}</code></dd></div>
     <div><dt>Private IPv6</dt><dd><code>${escapeHtml(instance.ipv6 || "Pending")}</code></dd></div>
@@ -112,10 +114,16 @@ function render(data) {
     <div><dt>Uptime</dt><dd>${escapeHtml(uptime(metrics.uptimeSeconds))}</dd></div>`;
   renderSnapshots(instance);
   renderDomains(data.domains || []);
-  document.querySelectorAll("button, input").forEach((control) => { if (!control.closest("dialog")) control.disabled = pending || data.busy; });
-  const snapshotLimitReached = instance.snapshots.length >= instance.snapshotLimit;
-  elements.snapshotName.disabled = pending || data.busy || snapshotLimitReached;
-  elements.snapshotForm.querySelector("button").disabled = pending || data.busy || snapshotLimitReached;
+  const selectedDistribution = elements.reinstallDistribution.value;
+  elements.reinstallDistribution.innerHTML = (data.distributions || []).map((distribution) => (
+    `<option value="${escapeHtml(distribution.name)}">${escapeHtml(distribution.name)} - ${escapeHtml(distribution.release)} - ${escapeHtml(distribution.support)}</option>`
+  )).join("");
+  elements.reinstallDistribution.value = (data.distributions || []).some((distribution) => distribution.name === selectedDistribution)
+    ? selectedDistribution
+    : instance.distribution;
+  document.querySelectorAll("button, input, select").forEach((control) => { if (!control.closest("dialog")) control.disabled = pending || data.busy; });
+  elements.snapshotName.disabled = pending || data.busy;
+  elements.snapshotForm.querySelector("button").disabled = pending || data.busy;
 }
 
 async function load(quiet = false) {
@@ -195,6 +203,19 @@ elements.domainList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-domain-delete]");
   if (!button) return;
   confirm("Remove web domain?", "The reverse proxy and certificate will be removed.", "Remove domain", () => mutate(`/api/instances/${encodeURIComponent(name)}/domains`, { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: button.dataset.domainDelete }) }, "Web domain removed."));
+});
+
+elements.reinstallForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const distribution = elements.reinstallDistribution.value;
+  confirm(
+    "Reinstall operating system?",
+    `All files, applications and snapshots will be deleted. ${name} will be rebuilt with ${distribution}.`,
+    "Reinstall OS",
+    () => mutate(`/api/instances/${encodeURIComponent(name)}/reinstall`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ distribution }),
+    }, `${name} was reinstalled with ${distribution}.`),
+  );
 });
 
 elements.deleteInstance.addEventListener("click", () => {

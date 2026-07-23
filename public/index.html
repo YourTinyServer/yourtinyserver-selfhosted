@@ -7,6 +7,7 @@
     <title>YourTinyServer Self-Hosted</title>
     <link rel="stylesheet" href="/styles.css" />
     <script type="module" src="/app.js"></script>
+    <script type="module" src="/auth.js"></script>
   </head>
   <body>
     <header class="topbar">
@@ -14,7 +15,11 @@
         <strong>YourTinyServer</strong>
         <span>Self-Hosted</span>
       </div>
-      <a href="https://github.com/YourTinyServer/yourtinyserver-selfhosted" target="_blank" rel="noreferrer">GitHub</a>
+      <nav class="topbar-actions" aria-label="Administrator actions">
+        <a href="https://github.com/YourTinyServer/yourtinyserver-selfhosted" target="_blank" rel="noreferrer">GitHub</a>
+        <button type="button" data-change-password>Change password</button>
+        <button type="button" data-logout>Log out</button>
+      </nav>
     </header>
 
     <main>
@@ -37,9 +42,11 @@
               <option value="">Loading profiles...</option>
             </select>
           </div>
-          <div class="field field-readonly">
-            <span>Operating system</span>
-            <strong>Ubuntu 24.04 LTS</strong>
+          <div class="field">
+            <label for="distribution">Operating system</label>
+            <select id="distribution" name="distribution" required disabled>
+              <option value="">Loading Linux distributions...</option>
+            </select>
           </div>
           <button id="create-button" class="button button-positive" type="submit" disabled>Create instance</button>
         </form>
@@ -56,6 +63,7 @@
               <tr>
                 <th>Name</th>
                 <th>Profile</th>
+                <th>Operating system</th>
                 <th>Status</th>
                 <th>IPv4</th>
                 <th>Created</th>
@@ -63,7 +71,7 @@
               </tr>
             </thead>
             <tbody id="instances-body">
-              <tr><td colspan="6" class="empty">Loading instances...</td></tr>
+              <tr><td colspan="7" class="empty">Loading instances...</td></tr>
             </tbody>
           </table>
         </div>
@@ -82,4 +90,3 @@
     </dialog>
   </body>
 </html>
-

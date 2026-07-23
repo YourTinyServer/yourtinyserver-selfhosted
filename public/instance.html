@@ -7,11 +7,12 @@
     <title>Manage instance - YourTinyServer</title>
     <link rel="stylesheet" href="/styles.css" />
     <script type="module" src="/instance.js"></script>
+    <script type="module" src="/auth.js"></script>
   </head>
   <body>
     <header class="topbar">
       <div><strong>YourTinyServer</strong><span>Self-Hosted</span></div>
-      <a href="/">Instances</a>
+      <nav class="topbar-actions" aria-label="Administrator actions"><a href="/">Instances</a><button type="button" data-change-password>Change password</button><button type="button" data-logout>Log out</button></nav>
     </header>
 
     <main>
@@ -59,6 +60,15 @@
           <button class="button button-positive" type="submit">Add domain</button>
         </form>
         <div id="domain-list" class="item-list"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="reinstall-heading">
+        <div class="section-header"><div><h2 id="reinstall-heading">Reinstall operating system</h2><p>Rebuild the root disk with another Linux image while keeping the instance name, profile and domain routes.</p></div></div>
+        <form id="reinstall-form" class="reinstall-form">
+          <div class="field"><label for="reinstall-distribution">Linux distribution</label><select id="reinstall-distribution" required></select></div>
+          <button class="button button-negative" type="submit">Reinstall OS</button>
+        </form>
+        <p class="warning-text">All files, applications and snapshots in this instance will be permanently deleted.</p>
       </section>
 
       <section class="danger-zone" aria-labelledby="danger-heading">

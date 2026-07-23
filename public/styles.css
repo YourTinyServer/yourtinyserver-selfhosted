@@ -25,6 +25,10 @@ a { color: #06c; }
 .topbar span { color: #cdcdcd; }
 .topbar a { color: #fff; text-decoration: none; }
 .topbar a:hover { text-decoration: underline; }
+.topbar-actions { align-items: center; display: flex; gap: 1.25rem; }
+.topbar-actions button { background: transparent; border: 0; color: #fff; cursor: pointer; padding: 0; }
+.topbar-actions button:hover { text-decoration: underline; }
+.topbar-actions button:disabled { opacity: .55; }
 
 main { margin: 0 auto; max-width: 90rem; padding: 2rem; }
 h1, h2 { font-weight: 400; margin-top: 0; }
@@ -151,6 +155,8 @@ dialog::backdrop { background: rgb(0 0 0 / 55%); }
 .compact-form, .domain-form { align-items: end; display: grid; gap: 1rem; margin: 0 0 1.5rem; }
 .compact-form { grid-template-columns: minmax(0, 1fr) auto; }
 .domain-form { grid-template-columns: minmax(12rem, 1fr) minmax(7rem, 10rem) auto; }
+.reinstall-form { align-items: end; display: grid; gap: 1rem; grid-template-columns: minmax(14rem, 1fr) auto; margin-top: 1.5rem; }
+.warning-text { color: #c7162b; }
 .field-port { max-width: 10rem; }
 .item-list { border-top: 1px solid #d9d9d9; }
 .list-item { align-items: center; border-bottom: 1px solid #d9d9d9; display: flex; gap: 1rem; justify-content: space-between; padding: .875rem 0; }
@@ -166,6 +172,15 @@ dialog::backdrop { background: rgb(0 0 0 / 55%); }
 #terminal { height: min(70vh, 48rem); min-height: 28rem; width: 100%; }
 #terminal .xterm, #terminal .xterm-screen, #terminal .xterm-viewport { height: 100% !important; }
 #terminal .xterm-viewport { overflow-y: auto !important; }
+#terminal .xterm-screen, #terminal .xterm-rows, #terminal .xterm-rows > div { color: #f7f7f7 !important; }
+.login-page { background: #262626; }
+.login-shell { align-items: center; display: flex; min-height: 100vh; padding: 1rem; }
+.login-form { background: #fff; border-top: 4px solid #0e8420; margin: auto; max-width: 28rem; padding: 2rem; width: 100%; }
+.login-form h1 { font-size: 2rem; }
+.login-form > * { margin-bottom: 1.25rem; }
+.login-form > *:last-child { margin-bottom: 0; }
+.login-form .button { width: 100%; }
+#password-dialog form { margin: 0; }
 
 @media (max-width: 56rem) {
   .create-section form { grid-template-columns: 1fr 1fr; }
@@ -174,8 +189,9 @@ dialog::backdrop { background: rgb(0 0 0 / 55%); }
 }
 
 @media (max-width: 44rem) {
-  .topbar { padding: 0 1rem; }
-  .topbar div { align-items: flex-start; flex-direction: column; gap: 0; padding: 0.65rem 0; }
+  .topbar { align-items: stretch; flex-direction: column; padding: 0 1rem; }
+  .topbar > div { align-items: flex-start; flex-direction: column; gap: 0; padding: 0.65rem 0; }
+  .topbar-actions { border-top: 1px solid #444; justify-content: space-between; padding: .65rem 0; width: 100%; }
   main { padding: 1rem; }
   h1 { font-size: 2rem; }
   .page-header { align-items: flex-start; gap: 1rem; }
@@ -194,7 +210,7 @@ dialog::backdrop { background: rgb(0 0 0 / 55%); }
   .dialog-actions { flex-direction: column-reverse; }
   .dialog-actions .button { width: 100%; }
   .metrics-grid, .detail-grid { grid-template-columns: 1fr; }
-  .domain-form, .compact-form { align-items: stretch; grid-template-columns: 1fr; }
+  .domain-form, .compact-form, .reinstall-form { align-items: stretch; grid-template-columns: 1fr; }
   .field-port { max-width: none; }
   .list-item, .danger-zone { align-items: stretch; flex-direction: column; }
   .list-item .row-actions, .list-item > button, .danger-zone .button { width: 100%; }
@@ -202,4 +218,6 @@ dialog::backdrop { background: rgb(0 0 0 / 55%); }
   .definition-list > div { grid-template-columns: 1fr; gap: .25rem; }
   .terminal-frame { margin-inline: -1rem; padding: .75rem .75rem 1.25rem; }
   #terminal { height: 68vh; min-height: 24rem; }
+  .topbar-actions { gap: .75rem; }
+  .topbar-actions a, .topbar-actions button { font-size: .875rem; }
 }

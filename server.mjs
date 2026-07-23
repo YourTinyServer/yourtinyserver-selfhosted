@@ -3,10 +3,14 @@ import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { listDomains, provisionDomain, removeDomain, removeInstanceDomains } from "./lib/domains.mjs";
+import { listDomains, provisionDomain, refreshInstanceDomains, removeDomain, removeInstanceDomains } from "./lib/domains.mjs";
+import { DISTRIBUTIONS } from "./lib/distributions.mjs";
+import {
+  clearSessionCookie, createSessionCookie, resetAdministratorPassword, sessionFromRequest, verifyCredentials,
+} from "./lib/auth.mjs";
 import {
   createInstance, createInstanceName, createInstanceSnapshot, deleteInstance, deleteInstanceSnapshot,
-  getInstanceDetails, listInstances, listOperations, listProfiles, performInstanceAction, restoreInstanceSnapshot,
+  getInstanceDetails, listInstances, listOperations, listProfiles, performInstanceAction, reinstallInstance, restoreInstanceSnapshot,
 } from "./lib/lxd.mjs";
 import { attachTerminalGateway } from "./lib/terminal.mjs";
 
@@ -19,6 +23,7 @@ const APP_ORIGIN = process.env.APP_ORIGIN || `http://${HOST}:${PORT}`;
 let activeOperation = null;
 let lastOperation = null;
 const busyInstances = new Set();
+const loginAttempts = new Map();
 
 const STATIC_FILES = new Map([
   ["/", [join(PUBLIC, "index.html"), "text/html; charset=utf-8"]],
@@ -28,16 +33,20 @@ const STATIC_FILES = new Map([
   ["/instance.js", [join(PUBLIC, "instance.js"), "text/javascript; charset=utf-8"]],
   ["/terminal.html", [join(PUBLIC, "terminal.html"), "text/html; charset=utf-8"]],
   ["/terminal.js", [join(PUBLIC, "terminal.js"), "text/javascript; charset=utf-8"]],
+  ["/auth.js", [join(PUBLIC, "auth.js"), "text/javascript; charset=utf-8"]],
+  ["/login.html", [join(PUBLIC, "login.html"), "text/html; charset=utf-8"]],
+  ["/login.js", [join(PUBLIC, "login.js"), "text/javascript; charset=utf-8"]],
   ["/vendor/xterm.js", [join(ROOT, "node_modules", "@xterm", "xterm", "lib", "xterm.js"), "text/javascript; charset=utf-8"]],
   ["/vendor/addon-fit.js", [join(ROOT, "node_modules", "@xterm", "addon-fit", "lib", "addon-fit.js"), "text/javascript; charset=utf-8"]],
   ["/vendor/xterm.css", [join(ROOT, "node_modules", "@xterm", "xterm", "css", "xterm.css"), "text/css; charset=utf-8"]],
 ]);
 
-function json(response, status, body) {
+function json(response, status, body, headers = {}) {
   response.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
     "cache-control": "no-store",
     "x-content-type-options": "nosniff",
+    ...headers,
   });
   response.end(JSON.stringify(body));
 }
@@ -55,9 +64,18 @@ function sameOrigin(request) {
   return request.headers.origin === APP_ORIGIN;
 }
 
+function clientAddress(request) {
+  return String(request.headers["x-forwarded-for"] || request.socket.remoteAddress || "unknown").split(",", 1)[0].trim();
+}
+
+function redirectToLogin(response) {
+  response.writeHead(302, { location: "/login.html", "cache-control": "no-store" });
+  response.end();
+}
+
 function operationError(response, error) {
   const message = error instanceof Error ? error.message : "LXD operation failed";
-  const status = /not found/i.test(message) ? 404 : /invalid|valid|unsupported/i.test(message) ? 400 : 409;
+  const status = /not found/i.test(message) ? 404 : /invalid|valid|unsupported|password must/i.test(message) ? 400 : 409;
   return json(response, status, { error: message });
 }
 
@@ -87,6 +105,50 @@ async function staticFile(pathname, response) {
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url || "/", APP_ORIGIN);
+    if (request.method === "GET" && url.pathname === "/api/health") return json(response, 200, { ok: true });
+    if (request.method === "GET" && ["/login.html", "/login.js", "/styles.css"].includes(url.pathname)) {
+      if (await staticFile(url.pathname, response)) return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/auth/login") {
+      if (!sameOrigin(request)) return json(response, 403, { error: "Invalid request origin" });
+      const address = clientAddress(request);
+      const now = Date.now();
+      const attempts = loginAttempts.get(address);
+      if (attempts && attempts.resetAt > now && attempts.count >= 5) return json(response, 429, { error: "Too many sign-in attempts. Try again in 15 minutes." });
+      const input = await body(request);
+      if (!await verifyCredentials(String(input.username || ""), String(input.password || ""))) {
+        const current = attempts?.resetAt > now ? attempts : { count: 0, resetAt: now + 15 * 60 * 1000 };
+        current.count += 1;
+        loginAttempts.set(address, current);
+        return json(response, 401, { error: "Invalid username or password" });
+      }
+      loginAttempts.delete(address);
+      return json(response, 200, { ok: true }, { "set-cookie": await createSessionCookie(input.username) });
+    }
+
+    const session = await sessionFromRequest(request);
+    if (request.method === "GET" && url.pathname === "/api/auth/session") {
+      return session ? json(response, 200, { username: session.username }) : json(response, 401, { error: "Not authenticated" });
+    }
+    if (!session) {
+      if (url.pathname.startsWith("/api/")) return json(response, 401, { error: "Not authenticated" });
+      return redirectToLogin(response);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/auth/logout") {
+      if (!sameOrigin(request)) return json(response, 403, { error: "Invalid request origin" });
+      return json(response, 200, { ok: true }, { "set-cookie": clearSessionCookie() });
+    }
+    if (request.method === "POST" && url.pathname === "/api/auth/password") {
+      if (!sameOrigin(request)) return json(response, 403, { error: "Invalid request origin" });
+      try {
+        const input = await body(request);
+        const username = await resetAdministratorPassword(input.password);
+        return json(response, 200, { ok: true }, { "set-cookie": await createSessionCookie(username) });
+      } catch (error) { return operationError(response, error); }
+    }
+
     if (request.method === "GET" && await staticFile(url.pathname, response)) return;
 
     if (request.method === "GET" && url.pathname === "/api/overview") {
@@ -97,7 +159,7 @@ const server = createServer(async (request, response) => {
       ]);
       return json(response, 200, {
         project: PROJECT,
-        image: "Ubuntu 24.04 LTS",
+        distributions: DISTRIBUTIONS,
         profiles,
         instances,
         activeOperation,
@@ -110,7 +172,7 @@ const server = createServer(async (request, response) => {
     if (request.method === "GET" && detail) {
       try {
         const instance = await getInstanceDetails(PROJECT, detail[1]);
-        return json(response, 200, { instance, domains: await listDomains(detail[1]), busy: busyInstances.has(detail[1]) });
+        return json(response, 200, { instance, domains: await listDomains(detail[1]), distributions: DISTRIBUTIONS, busy: busyInstances.has(detail[1]) });
       } catch (error) { return operationError(response, error); }
     }
 
@@ -121,6 +183,20 @@ const server = createServer(async (request, response) => {
         const input = await body(request);
         if (!["start", "restart", "freeze", "stop"].includes(input.action)) return json(response, 400, { error: "Unsupported instance action" });
         const instance = await exclusiveInstance(actions[1], () => performInstanceAction(PROJECT, actions[1], input.action));
+        return json(response, 200, { ok: true, instance });
+      } catch (error) { return operationError(response, error); }
+    }
+
+    const reinstall = url.pathname.match(/^\/api\/instances\/(yts-[a-z0-9]+-[0-9]{17})\/reinstall$/);
+    if (request.method === "POST" && reinstall) {
+      if (!sameOrigin(request)) return json(response, 403, { error: "Invalid request origin" });
+      try {
+        const input = await body(request);
+        const instance = await exclusiveInstance(reinstall[1], async () => {
+          const result = await reinstallInstance(PROJECT, reinstall[1], input.distribution);
+          await refreshInstanceDomains(PROJECT, reinstall[1]);
+          return result;
+        });
         return json(response, 200, { ok: true, instance });
       } catch (error) { return operationError(response, error); }
     }
@@ -166,18 +242,22 @@ const server = createServer(async (request, response) => {
         return json(response, 409, { error: "An LXD operation is already running. Its progress is shown in the instance list." });
       }
       const input = await body(request);
+      if (!DISTRIBUTIONS.some((distribution) => distribution.name === input.distribution)) {
+        return json(response, 400, { error: "Unsupported Linux distribution" });
+      }
       const name = createInstanceName(input.profile);
       const operation = {
         id: `${name}:${Date.now()}`,
         type: "create",
         name,
         profile: input.profile,
+        distribution: input.distribution,
         status: "creating",
         startedAt: new Date().toISOString(),
       };
       activeOperation = operation;
       lastOperation = null;
-      void createInstance(PROJECT, input.profile, name)
+      void createInstance(PROJECT, input.profile, input.distribution, name)
         .then(() => {
           lastOperation = { ...operation, status: "completed", completedAt: new Date().toISOString() };
         })
@@ -233,7 +313,7 @@ const server = createServer(async (request, response) => {
   }
 });
 
-attachTerminalGateway(server, { origin: APP_ORIGIN, project: PROJECT });
+attachTerminalGateway(server, { origin: APP_ORIGIN, project: PROJECT, authorize: sessionFromRequest });
 server.listen(PORT, HOST, () => {
   console.log(`YourTinyServer Self-Hosted listening on http://${HOST}:${PORT}`);
 });
