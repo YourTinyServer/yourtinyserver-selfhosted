@@ -8,7 +8,8 @@ const elements = {
   snapshotForm: document.querySelector("#snapshot-form"), snapshotName: document.querySelector("#snapshot-name"),
   snapshotCount: document.querySelector("#snapshot-count"), snapshotList: document.querySelector("#snapshot-list"),
   domainForm: document.querySelector("#domain-form"), domainName: document.querySelector("#domain-name"),
-  domainPort: document.querySelector("#domain-port"), domainList: document.querySelector("#domain-list"),
+  domainProtocol: document.querySelector("#domain-protocol"), domainPort: document.querySelector("#domain-port"),
+  domainSubmit: document.querySelector("#domain-submit"), domainCancel: document.querySelector("#domain-cancel"), domainList: document.querySelector("#domain-list"),
   reinstallForm: document.querySelector("#reinstall-form"), reinstallDistribution: document.querySelector("#reinstall-distribution"),
   deleteInstance: document.querySelector("#delete-instance"), dialog: document.querySelector("#confirm-dialog"),
   confirmTitle: document.querySelector("#confirm-title"), confirmDescription: document.querySelector("#confirm-description"),
@@ -18,6 +19,7 @@ const elements = {
 let payload = null;
 let pending = false;
 let confirmTask = null;
+let editingDomainId = null;
 
 function escapeHtml(value) {
   return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
@@ -87,8 +89,8 @@ function renderSnapshots(instance) {
 function renderDomains(domains) {
   elements.domainList.innerHTML = domains.length ? domains.map((route) => `
     <div class="list-item">
-      <div><strong>${route.status === "active" ? `<a href="https://${escapeHtml(route.domain)}" target="_blank" rel="noreferrer">${escapeHtml(route.domain)}</a>` : escapeHtml(route.domain)}</strong><small>Internal port ${route.targetPort} - ${escapeHtml(route.status)}</small>${route.errorMessage ? `<small class="error-text">${escapeHtml(route.errorMessage)}</small>` : ""}</div>
-      <button class="button button-negative button-small" data-domain-delete="${escapeHtml(route.id)}">Remove</button>
+      <div><strong>${route.status === "active" ? `<a href="https://${escapeHtml(route.domain)}" target="_blank" rel="noreferrer">${escapeHtml(route.domain)}</a>` : escapeHtml(route.domain)}</strong><small>${escapeHtml((route.targetProtocol || "http").toUpperCase())} to internal port ${route.targetPort} - ${escapeHtml(route.status)}</small>${route.errorMessage ? `<small class="error-text">${escapeHtml(route.errorMessage)}</small>` : ""}</div>
+      <div class="row-actions"><button class="button button-secondary button-small" data-domain-edit="${escapeHtml(route.id)}">Edit routing</button><button class="button button-negative button-small" data-domain-delete="${escapeHtml(route.id)}">Remove</button></div>
     </div>`).join("") : '<p class="empty-state">No web domains configured.</p>';
 }
 
@@ -194,15 +196,40 @@ elements.snapshotList.addEventListener("click", (event) => {
 elements.domainForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const domain = elements.domainName.value.trim().toLowerCase();
+  const editing = editingDomainId;
   void mutate(`/api/instances/${encodeURIComponent(name)}/domains`, {
-    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ domain, targetPort: Number(elements.domainPort.value) }),
-  }, `${domain} is online with HTTPS.`).then(() => { elements.domainName.value = ""; elements.domainPort.value = "80"; });
+    method: editing ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: editing, domain, targetProtocol: elements.domainProtocol.value, targetPort: Number(elements.domainPort.value) }),
+  }, editing ? `${domain} routing updated.` : `${domain} is online with HTTPS.`).then(() => resetDomainForm());
 });
 
+function resetDomainForm() {
+  editingDomainId = null;
+  elements.domainName.value = "";
+  elements.domainName.readOnly = false;
+  elements.domainProtocol.value = "http";
+  elements.domainPort.value = "80";
+  elements.domainSubmit.textContent = "Add domain";
+  elements.domainCancel.hidden = true;
+}
+
+elements.domainCancel.addEventListener("click", resetDomainForm);
+
 elements.domainList.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-domain-delete]");
-  if (!button) return;
-  confirm("Remove web domain?", "The reverse proxy and certificate will be removed.", "Remove domain", () => mutate(`/api/instances/${encodeURIComponent(name)}/domains`, { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: button.dataset.domainDelete }) }, "Web domain removed."));
+  const edit = event.target.closest("[data-domain-edit]");
+  const remove = event.target.closest("[data-domain-delete]");
+  if (edit) {
+    const route = (payload?.domains || []).find((candidate) => candidate.id === edit.dataset.domainEdit);
+    if (!route) return;
+    editingDomainId = route.id;
+    elements.domainName.value = route.domain;
+    elements.domainName.readOnly = true;
+    elements.domainProtocol.value = route.targetProtocol || "http";
+    elements.domainPort.value = String(route.targetPort);
+    elements.domainSubmit.textContent = "Save routing";
+    elements.domainCancel.hidden = false;
+    elements.domainForm.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  if (remove) confirm("Remove web domain?", "The reverse proxy and certificate will be removed.", "Remove domain", () => mutate(`/api/instances/${encodeURIComponent(name)}/domains`, { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: remove.dataset.domainDelete }) }, "Web domain removed."));
 });
 
 elements.reinstallForm.addEventListener("submit", (event) => {

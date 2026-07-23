@@ -3,7 +3,7 @@ import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { listDomains, provisionDomain, refreshAllDomains, refreshInstanceDomains, removeDomain, removeInstanceDomains } from "./lib/domains.mjs";
+import { listDomains, provisionDomain, refreshAllDomains, refreshInstanceDomains, removeDomain, removeInstanceDomains, updateDomain } from "./lib/domains.mjs";
 import { DISTRIBUTIONS } from "./lib/distributions.mjs";
 import {
   clearSessionCookie, createSessionCookie, resetAdministratorPassword, sessionFromRequest, verifyCredentials,
@@ -223,6 +223,14 @@ const server = createServer(async (request, response) => {
         const input = await body(request);
         const route = await exclusiveInstance(domains[1], () => provisionDomain(PROJECT, domains[1], input));
         return json(response, 201, { domain: route });
+      } catch (error) { return operationError(response, error); }
+    }
+    if (request.method === "PATCH" && domains) {
+      if (!sameOrigin(request)) return json(response, 403, { error: "Invalid request origin" });
+      try {
+        const input = await body(request);
+        const route = await exclusiveInstance(domains[1], () => updateDomain(PROJECT, domains[1], input));
+        return json(response, 200, { domain: route });
       } catch (error) { return operationError(response, error); }
     }
     if (request.method === "DELETE" && domains) {
