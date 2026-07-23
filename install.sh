@@ -52,7 +52,7 @@ read_value "Administrator username" ADMIN_USER
 read_value "Password setup ([1] generate - default, [2] enter your own)" PASSWORD_MODE
 case "${PASSWORD_MODE:-1}" in
   1)
-    ADMIN_PASSWORD="$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+    ADMIN_PASSWORD="Aa1!$(openssl rand -base64 18 | tr -d '\n')"
     PASSWORD_WAS_GENERATED=true
     printf 'Generated administrator password: %s\n' "$ADMIN_PASSWORD"
     printf 'Store this password securely. It will be shown once more after installation.\n'
@@ -69,6 +69,10 @@ read_value "Email for the TLS certificate" TLS_EMAIL
 valid_domain "$APP_DOMAIN" || die "Invalid dashboard domain."
 [[ "$ADMIN_USER" =~ ^[A-Za-z0-9._-]{3,32}$ ]] || die "Administrator username must contain 3-32 letters, numbers, dots, hyphens or underscores."
 [[ ${#ADMIN_PASSWORD} -ge 12 ]] || die "Administrator password must contain at least 12 characters."
+[[ "$ADMIN_PASSWORD" =~ [a-z] ]] || die "Administrator password must contain a lowercase letter."
+[[ "$ADMIN_PASSWORD" =~ [A-Z] ]] || die "Administrator password must contain an uppercase letter."
+[[ "$ADMIN_PASSWORD" =~ [0-9] ]] || die "Administrator password must contain a number."
+[[ "$ADMIN_PASSWORD" =~ [^A-Za-z0-9] ]] || die "Administrator password must contain a special character."
 [[ "$TLS_EMAIL" == *@*.* ]] || die "Invalid TLS email."
 
 RESOLVED="$(getent ahostsv4 "$APP_DOMAIN" | awk 'NR==1 {print $1}')"
@@ -155,6 +159,8 @@ else
   git clone --depth 1 "$REPOSITORY" "$APP_DIR"
 fi
 npm ci --omit=dev --prefix "$APP_DIR"
+install -m 755 "$APP_DIR/scripts/reset-password.sh" /usr/local/sbin/yourtinyserver-reset-password
+install -m 755 "$APP_DIR/scripts/uninstall.sh" /usr/local/sbin/yourtinyserver-uninstall
 mkdir -p /var/lib/yourtinyserver-selfhosted/acme/.well-known/acme-challenge
 chmod 755 /var/lib/yourtinyserver-selfhosted
 
@@ -197,11 +203,8 @@ server {
   listen 80;
   listen [::]:80;
   server_name $APP_DOMAIN;
-  auth_basic "YourTinyServer Self-Hosted";
-  auth_basic_user_file /etc/nginx/.htpasswd-yourtinyserver;
 
   location ^~ /.well-known/acme-challenge/ {
-    auth_basic off;
     root /var/www/html;
   }
 
@@ -255,7 +258,7 @@ ufw route allow in on "$NETWORK"
 ufw --force enable
 certbot --nginx -d "$APP_DOMAIN" --non-interactive --agree-tos --email "$TLS_EMAIL" --redirect
 
-curl -fsS -u "$ADMIN_USER:$ADMIN_PASSWORD" "https://$APP_DOMAIN/api/overview" >/dev/null || die "Dashboard health check failed."
+curl -fsS "https://$APP_DOMAIN/api/health" >/dev/null || die "Dashboard health check failed."
 
 printf '\n\033[1;32mYourTinyServer Self-Hosted is ready.\033[0m\n'
 printf 'Dashboard: https://%s\n' "$APP_DOMAIN"

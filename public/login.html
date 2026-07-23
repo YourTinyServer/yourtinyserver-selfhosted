@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Sign in - YourTinyServer</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/login.js"></script>
+  </head>
+  <body class="login-page">
+    <main class="login-shell">
+      <form id="login-form" class="login-form">
+        <div><h1>YourTinyServer</h1><p>Self-Hosted administrator</p></div>
+        <div id="login-error" class="notification notification-negative" role="alert" hidden></div>
+        <div class="field"><label for="username">Username</label><input id="username" name="username" autocomplete="username" required /></div>
+        <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required /></div>
+        <button id="login-button" class="button button-positive" type="submit">Sign in</button>
+      </form>
+    </main>
+  </body>
+</html>

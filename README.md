@@ -1,43 +1,31 @@
 # YourTinyServer Self-Hosted
 
-A personal LXC management dashboard for running permanent Ubuntu 24.04 instances on your own server.
+A free, single-administrator LXD dashboard for your own Ubuntu server. It has no accounts, payments, billing, renewals or external database.
 
-This edition has no Supabase, customer registration, email verification, payments, balance, invoices, renewals, expiration dates or background billing workers. LXD is the only source of instance state.
+Hosted plans are available at [yourtinyserver.com](https://yourtinyserver.com).
 
-For ready-to-use hosted servers, visit [yourtinyserver.com](https://yourtinyserver.com).
+## Included
 
-## Features
-
-- Five local resource profiles from 512 MB to 8 GB RAM
-- Ubuntu 24.04 LTS instances
-- Start, restart, freeze, stop and permanently delete instances
-- Live CPU, memory, disk, network, process and uptime metrics
-- Create, restore and delete snapshots with profile-specific limits
+- Five resource profiles from 512 MB to 8 GB RAM
+- The same 41 Linux images offered by YourTinyServer
+- Start, restart, freeze, stop and delete controls
+- Unlimited local snapshots with restore
+- CPU, memory, disk, network and uptime metrics
 - Interactive root web terminal
-- Web-domain routing to an internal port with automatic Let's Encrypt HTTPS
-- Live status and private IPv4/IPv6 display
+- Automatic Nginx and Let's Encrypt domain routing
+- OS reinstallation from the complete image catalog
 - Docker-ready unprivileged LXC profiles
-- HTTPS and administrator authentication through Nginx
-- No application database; LXD remains the source of instance state
 
-## Install
+## Requirements
 
-### Requirements
-
-- A clean Ubuntu 22.04 or 24.04 KVM VPS or bare-metal server
-- A real virtual machine or physical server, not an LXC or OpenVZ container
-- Root access
-- At least 20 GB of free storage
-- A DNS-only A record pointing a domain to the server's public IPv4
+- Clean Ubuntu 22.04 or 24.04 KVM VPS or bare-metal server
+- Root access and at least 20 GB free storage
+- DNS-only A record pointing the dashboard domain to the server IPv4
 - Ports `22`, `80` and `443` available
 
-Example:
+Do not install it inside an LXC or OpenVZ container.
 
-```text
-lxc.example.com  A  203.0.113.10
-```
-
-Connect as root and run:
+## Install
 
 ```bash
 apt-get update && apt-get install -y curl
@@ -46,41 +34,9 @@ curl -fsSL https://raw.githubusercontent.com/YourTinyServer/yourtinyserver-selfh
 bash /tmp/yourtinyserver-selfhosted-install.sh
 ```
 
-The installer asks only for the dashboard domain, administrator username, password setup and TLS email. It can generate a secure administrator password automatically or accept one containing at least 12 characters. Generated passwords are displayed during setup and once more when installation completes.
+The installer configures LXD, profiles, networking, Nginx, administrator authentication and HTTPS. It can generate the administrator password. If setup fails, correct the reported problem and rerun the displayed retry command.
 
-If validation or a command fails, the installer displays the exact `bash /path/to/install.sh` command needed to retry. It is safe to rerun after correcting the reported problem.
-
-The installer installs LXD and the terminal dependencies, creates the network and profiles, configures Nginx authentication and obtains a Let's Encrypt certificate.
-
-Open the displayed HTTPS URL and sign in with the administrator credentials. Select a profile to create an instance, then use **Manage** to control resources, snapshots, terminal access and web domains. Deleting an instance permanently removes its LXD storage and domain routes.
-
-The first instance can take several minutes because LXD must download and cache the Ubuntu image. Keep the page open until the operation completes. Later instances usually start much faster.
-
-### SSH configuration prompt
-
-Ubuntu may report that `/etc/ssh/sshd_config` was locally modified and ask which version to keep. This commonly happens when a hosting provider has customized SSH access.
-
-Select **keep the local version currently installed**. Replacing it with the package maintainer's version can remove provider-specific settings and prevent a future SSH connection.
-
-After the package operation finishes, validate SSH without closing the current session:
-
-```bash
-sshd -t
-systemctl is-active ssh
-```
-
-Open a second SSH session and confirm that it works before closing the first one.
-
-### Instance creation response error
-
-If an older installation displays `JSON.parse: unexpected character` after creating the first instance, the reverse proxy timed out while LXD was still downloading Ubuntu. Check whether creation continued:
-
-```bash
-lxc list --project yourtinyserver-selfhosted
-journalctl -u yourtinyserver-selfhosted -n 100 --no-pager
-```
-
-Update the checkout and rerun the current installer to apply the longer proxy timeout. The operation is safe to retry; always refresh the instance list before submitting a second creation request.
+If Ubuntu asks what to do with a modified `/etc/ssh/sshd_config`, select **keep the local version currently installed**. Confirm SSH from a second session before closing the first one.
 
 ## Operations
 
@@ -88,26 +44,30 @@ Update the checkout and rerun the current installer to apply the longer proxy ti
 systemctl status yourtinyserver-selfhosted
 journalctl -u yourtinyserver-selfhosted -f
 lxc list --project yourtinyserver-selfhosted
-nginx -t
 ```
 
-Open a shell in an instance from the host:
-
-```bash
-lxc exec INSTANCE_NAME --project yourtinyserver-selfhosted -- bash
-```
-
-Update the application:
+Update:
 
 ```bash
 cd /opt/yourtinyserver-selfhosted
 git pull --ff-only
+npm ci --omit=dev
 systemctl restart yourtinyserver-selfhosted
 ```
 
-## Scope
+Reset the administrator password:
 
-This project is intentionally single-host and single-administrator. It is not a billing platform and does not allocate public IP addresses or public SSH ports. Instances receive private addresses behind LXD NAT. Domain-route metadata is stored locally in `/var/lib/yourtinyserver-selfhosted/domains.json`.
+```bash
+yourtinyserver-reset-password
+```
+
+Uninstall the platform and permanently delete its instances and data:
+
+```bash
+yourtinyserver-uninstall
+```
+
+Instances use private LXD NAT addresses. Domain routes are stored locally in `/var/lib/yourtinyserver-selfhosted/domains.json`.
 
 ## License
 

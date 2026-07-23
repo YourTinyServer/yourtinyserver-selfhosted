@@ -1,4 +1,5 @@
 const profileSelect = document.querySelector("#profile");
+const distributionSelect = document.querySelector("#distribution");
 const createForm = document.querySelector("#create-form");
 const createButton = document.querySelector("#create-button");
 const refreshButton = document.querySelector("#refresh-button");
@@ -17,9 +18,10 @@ let shownOperation = null;
 
 function updateControls() {
   const disabled = pending || serverBusy;
-  createButton.disabled = disabled || !profileSelect.value;
+  createButton.disabled = disabled || !profileSelect.value || !distributionSelect.value;
   createButton.textContent = serverBusy ? "LXD operation in progress" : "Create instance";
   profileSelect.disabled = disabled;
+  distributionSelect.disabled = disabled;
   refreshButton.disabled = pending;
   document.querySelectorAll("[data-delete]").forEach((button) => { button.disabled = disabled; });
 }
@@ -77,6 +79,7 @@ function renderInstances(instances, activeOperation, lxdOperations) {
     rows.unshift({
       name: activeOperation.name,
       profile: activeOperation.profile,
+      distribution: activeOperation.distribution,
       status: "creating",
       ipv4: null,
       createdAt: activeOperation.startedAt,
@@ -96,13 +99,14 @@ function renderInstances(instances, activeOperation, lxdOperations) {
 
   instanceCount.textContent = String(rows.length);
   if (!rows.length) {
-    instancesBody.innerHTML = '<tr><td colspan="6" class="empty">No instances.</td></tr>';
+    instancesBody.innerHTML = '<tr><td colspan="7" class="empty">No instances.</td></tr>';
     return;
   }
   instancesBody.innerHTML = rows.map((instance) => `
     <tr>
       <td data-label="Name"><code>${escapeHtml(instance.name)}</code></td>
       <td data-label="Profile">${escapeHtml(instance.profile)}</td>
+      <td data-label="Operating system">${escapeHtml(instance.distribution || "Unknown")}</td>
       <td data-label="Status">${statusLabel(instance.status)}</td>
       <td data-label="IPv4"><code>${escapeHtml(instance.ipv4 || "Pending")}</code></td>
       <td data-label="Created">${formatDate(instance.createdAt)}</td>
@@ -131,13 +135,21 @@ async function load(showError = true) {
       `<option value="${profile.name}">${profile.name} - ${profile.cpu} vCPU - ${profile.memory} RAM - ${profile.disk}</option>`
     )).join("");
     if (data.profiles.some((profile) => profile.name === current)) profileSelect.value = current;
+    const currentDistribution = distributionSelect.value;
+    distributionSelect.innerHTML = data.distributions.map((distribution) => (
+      `<option value="${escapeHtml(distribution.name)}">${escapeHtml(distribution.name)} - ${escapeHtml(distribution.release)} - ${escapeHtml(distribution.support)}</option>`
+    )).join("");
+    const selectedDistribution = data.distributions.some((distribution) => distribution.name === currentDistribution)
+      ? currentDistribution
+      : data.distributions.find((distribution) => distribution.support === "Recommended")?.name;
+    if (selectedDistribution) distributionSelect.value = selectedDistribution;
     renderInstances(data.instances, data.activeOperation, lxdOperations);
     updateControls();
     const activeOperationKey = data.activeOperation ? `${data.activeOperation.id}:${data.activeOperation.status}` : null;
     const lastOperationKey = data.lastOperation ? `${data.lastOperation.id}:${data.lastOperation.status}` : null;
     if (data.activeOperation?.type === "create" && shownOperation !== activeOperationKey) {
       shownOperation = activeOperationKey;
-      notify(`${data.activeOperation.name} is being created. The first Ubuntu download can take several minutes.`, "information");
+      notify(`${data.activeOperation.name} is being created. The first image download can take several minutes.`, "information");
     } else if (data.lastOperation?.id && shownOperation !== lastOperationKey) {
       shownOperation = lastOperationKey;
       if (data.lastOperation.status === "failed") {
@@ -152,6 +164,7 @@ async function load(showError = true) {
 }
 
 profileSelect.addEventListener("change", updateControls);
+distributionSelect.addEventListener("change", updateControls);
 refreshButton.addEventListener("click", () => load());
 
 createForm.addEventListener("submit", async (event) => {
@@ -162,7 +175,7 @@ createForm.addEventListener("submit", async (event) => {
     const response = await fetch("/api/instances", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ profile: profileSelect.value }),
+      body: JSON.stringify({ profile: profileSelect.value, distribution: distributionSelect.value }),
     });
     const data = await responseJson(response);
     if (!response.ok) throw new Error(data.error || "Unable to create instance");

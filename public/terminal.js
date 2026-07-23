@@ -11,7 +11,14 @@ try {
   const terminal = new globalThis.Terminal({
     cursorBlink: true, convertEol: true, scrollback: 5000,
     fontFamily: "Ubuntu Mono, Consolas, monospace", fontSize: 14, lineHeight: 1.2,
-    theme: { background: "#262626", foreground: "#f7f7f7", cursor: "#f7f7f7", selectionBackground: "#666666", green: "#0e8420", blue: "#06c" },
+    theme: {
+      background: "#262626", foreground: "#f7f7f7", cursor: "#f7f7f7", cursorAccent: "#262626",
+      selectionBackground: "#666666", black: "#262626", brightBlack: "#666666",
+      red: "#f99b11", brightRed: "#ffbf69", green: "#0e8420", brightGreen: "#4caf50",
+      yellow: "#f99b11", brightYellow: "#ffbf69", blue: "#0066cc", brightBlue: "#4c9aff",
+      magenta: "#77216f", brightMagenta: "#aa5fa2", cyan: "#00a6a6", brightCyan: "#5fd7d7",
+      white: "#d9d9d9", brightWhite: "#ffffff",
+    },
   });
   const fit = new globalThis.FitAddon.FitAddon();
   terminal.loadAddon(fit);

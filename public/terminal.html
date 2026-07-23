@@ -10,9 +10,10 @@
     <script src="/vendor/xterm.js"></script>
     <script src="/vendor/addon-fit.js"></script>
     <script type="module" src="/terminal.js"></script>
+    <script type="module" src="/auth.js"></script>
   </head>
   <body>
-    <header class="topbar"><div><strong>YourTinyServer</strong><span>Self-Hosted</span></div><a href="/">Instances</a></header>
+    <header class="topbar"><div><strong>YourTinyServer</strong><span>Self-Hosted</span></div><nav class="topbar-actions" aria-label="Administrator actions"><a href="/">Instances</a><button type="button" data-change-password>Change password</button><button type="button" data-logout>Log out</button></nav></header>
     <main class="terminal-page">
       <p class="back-link"><a id="back-to-instance" href="/">Back to instance</a></p>
       <header class="page-header"><div><h1>Web terminal</h1><p id="terminal-status">Connecting...</p></div><button id="fit-terminal" class="button button-secondary" type="button">Fit terminal</button></header>
