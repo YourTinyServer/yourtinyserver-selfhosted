@@ -1,6 +1,6 @@
 # YourTinyServer Self-Hosted
 
-A small personal dashboard for creating permanent Ubuntu 24.04 LXC instances on your own server.
+A personal LXC management dashboard for running permanent Ubuntu 24.04 instances on your own server.
 
 This edition has no Supabase, customer registration, email verification, payments, balance, invoices, renewals, expiration dates or background billing workers. LXD is the only source of instance state.
 
@@ -10,11 +10,15 @@ For ready-to-use hosted servers, visit [yourtinyserver.com](https://yourtinyserv
 
 - Five local resource profiles from 512 MB to 8 GB RAM
 - Ubuntu 24.04 LTS instances
-- Create and permanently delete instances
-- Live status and private IPv4 display
+- Start, restart, freeze, stop and permanently delete instances
+- Live CPU, memory, disk, network, process and uptime metrics
+- Create, restore and delete snapshots with profile-specific limits
+- Interactive root web terminal
+- Web-domain routing to an internal port with automatic Let's Encrypt HTTPS
+- Live status and private IPv4/IPv6 display
 - Docker-ready unprivileged LXC profiles
 - HTTPS and administrator authentication through Nginx
-- No application database and no npm dependencies
+- No application database; LXD remains the source of instance state
 
 ## Install
 
@@ -46,9 +50,9 @@ The installer asks only for the dashboard domain, administrator username, passwo
 
 If validation or a command fails, the installer displays the exact `bash /path/to/install.sh` command needed to retry. It is safe to rerun after correcting the reported problem.
 
-The installer installs LXD, creates the network and profiles, configures Nginx authentication and obtains a Let's Encrypt certificate.
+The installer installs LXD and the terminal dependencies, creates the network and profiles, configures Nginx authentication and obtains a Let's Encrypt certificate.
 
-Open the displayed HTTPS URL and sign in with the administrator credentials. Select a profile to create an instance. Deleting an instance permanently removes its LXD storage.
+Open the displayed HTTPS URL and sign in with the administrator credentials. Select a profile to create an instance, then use **Manage** to control resources, snapshots, terminal access and web domains. Deleting an instance permanently removes its LXD storage and domain routes.
 
 The first instance can take several minutes because LXD must download and cache the Ubuntu image. Keep the page open until the operation completes. Later instances usually start much faster.
 
@@ -103,7 +107,7 @@ systemctl restart yourtinyserver-selfhosted
 
 ## Scope
 
-This project is intentionally single-host and single-administrator. It is not a billing platform and does not allocate public IP addresses or public SSH ports. Instances receive private addresses behind LXD NAT.
+This project is intentionally single-host and single-administrator. It is not a billing platform and does not allocate public IP addresses or public SSH ports. Instances receive private addresses behind LXD NAT. Domain-route metadata is stored locally in `/var/lib/yourtinyserver-selfhosted/domains.json`.
 
 ## License
 

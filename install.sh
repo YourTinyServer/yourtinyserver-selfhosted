@@ -77,7 +77,7 @@ RESOLVED="$(getent ahostsv4 "$APP_DOMAIN" | awk 'NR==1 {print $1}')"
 log "Installing system packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y apache2-utils ca-certificates certbot curl git nginx python3-certbot-nginx snapd ufw
+apt-get install -y apache2-utils build-essential ca-certificates certbot curl git nginx python3 python3-certbot-nginx snapd ufw
 
 if ! command -v node >/dev/null 2>&1 || [[ "$(node -p 'Number(process.versions.node.split(`.`)[0])')" -lt 18 ]]; then
   curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource-setup.sh
@@ -154,12 +154,18 @@ elif [[ -e "$APP_DIR" ]]; then
 else
   git clone --depth 1 "$REPOSITORY" "$APP_DIR"
 fi
+npm ci --omit=dev --prefix "$APP_DIR"
+mkdir -p /var/lib/yourtinyserver-selfhosted/acme/.well-known/acme-challenge
+chmod 755 /var/lib/yourtinyserver-selfhosted
 
 cat > /etc/yourtinyserver-selfhosted.env <<EOF
 HOST=127.0.0.1
 PORT=3060
 APP_ORIGIN=https://$APP_DOMAIN
 LXD_PROJECT=$PROJECT
+PUBLIC_IPV4=$SERVER_IPV4
+TLS_EMAIL=$TLS_EMAIL
+YTS_DATA_DIR=/var/lib/yourtinyserver-selfhosted
 EOF
 chmod 600 /etc/yourtinyserver-selfhosted.env
 
@@ -191,15 +197,27 @@ server {
   listen 80;
   listen [::]:80;
   server_name $APP_DOMAIN;
+  auth_basic "YourTinyServer Self-Hosted";
+  auth_basic_user_file /etc/nginx/.htpasswd-yourtinyserver;
 
   location ^~ /.well-known/acme-challenge/ {
     auth_basic off;
     root /var/www/html;
   }
 
+  location /terminal-ws {
+    proxy_pass http://127.0.0.1:3060;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade \$http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_read_timeout 2h;
+  }
+
   location / {
-    auth_basic "YourTinyServer Self-Hosted";
-    auth_basic_user_file /etc/nginx/.htpasswd-yourtinyserver;
     proxy_pass http://127.0.0.1:3060;
     proxy_http_version 1.1;
     proxy_connect_timeout 15s;
@@ -214,6 +232,12 @@ server {
 EOF
 
 ln -sfn /etc/nginx/sites-available/$SERVICE /etc/nginx/sites-enabled/$SERVICE
+mkdir -p /etc/letsencrypt/renewal-hooks/deploy
+cat > /etc/letsencrypt/renewal-hooks/deploy/yourtinyserver-selfhosted-nginx <<'EOF'
+#!/bin/sh
+systemctl reload nginx
+EOF
+chmod 755 /etc/letsencrypt/renewal-hooks/deploy/yourtinyserver-selfhosted-nginx
 nginx -t
 systemctl daemon-reload
 systemctl enable --now "$SERVICE"

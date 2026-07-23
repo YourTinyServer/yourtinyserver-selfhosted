@@ -106,7 +106,7 @@ function renderInstances(instances, activeOperation, lxdOperations) {
       <td data-label="Status">${statusLabel(instance.status)}</td>
       <td data-label="IPv4"><code>${escapeHtml(instance.ipv4 || "Pending")}</code></td>
       <td data-label="Created">${formatDate(instance.createdAt)}</td>
-      <td class="actions">${instance.pending ? "" : `<button class="button button-negative button-small" type="button" data-delete="${escapeHtml(instance.name)}">Delete</button>`}</td>
+      <td class="actions">${instance.pending ? "" : `<div class="row-actions"><a class="button button-secondary button-small" href="/instance.html?name=${encodeURIComponent(instance.name)}">Manage</a><button class="button button-negative button-small" type="button" data-delete="${escapeHtml(instance.name)}">Delete</button></div>`}</td>
     </tr>
   `).join("");
   document.querySelectorAll("[data-delete]").forEach((button) => {
