@@ -68,6 +68,7 @@ yourtinyserver-uninstall
 ```
 
 Instances use private LXD NAT addresses. Domain routes are stored locally in `/var/lib/yourtinyserver-selfhosted/domains.json`.
+Use an HTTP route for normal applications. If an installer creates its own certificate and HTTPS listener inside an instance, use **Edit routing** to switch the route to HTTPS and its internal TLS port (usually `443`). Host ACME files remain authoritative, while unmatched HTTP-01 challenges are forwarded to port `80` inside the instance.
 
 ## License
 

@@ -154,7 +154,8 @@ dialog::backdrop { background: rgb(0 0 0 / 55%); }
 .definition-list dd { margin: 0; overflow-wrap: anywhere; }
 .compact-form, .domain-form { align-items: end; display: grid; gap: 1rem; margin: 0 0 1.5rem; }
 .compact-form { grid-template-columns: minmax(0, 1fr) auto; }
-.domain-form { grid-template-columns: minmax(12rem, 1fr) minmax(7rem, 10rem) auto; }
+.domain-form { grid-template-columns: minmax(12rem, 1fr) minmax(8rem, 10rem) minmax(7rem, 9rem) auto; }
+.domain-form-actions { display: flex; gap: .5rem; }
 .reinstall-form { align-items: end; display: grid; gap: 1rem; grid-template-columns: minmax(14rem, 1fr) auto; margin-top: 1.5rem; }
 .warning-text { color: #c7162b; }
 .field-port { max-width: 10rem; }

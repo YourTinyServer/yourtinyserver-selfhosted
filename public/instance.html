@@ -56,8 +56,9 @@
         <div class="section-header"><div><h2 id="domains-heading">Web domains</h2><p>Point a DNS-only A record to this server, then route HTTPS traffic to an application port inside the instance.</p></div></div>
         <form id="domain-form" class="domain-form">
           <div class="field"><label for="domain-name">Domain</label><input id="domain-name" type="text" placeholder="app.example.com" required /></div>
+          <div class="field field-protocol"><label for="domain-protocol">Internal protocol</label><select id="domain-protocol"><option value="http">HTTP</option><option value="https">HTTPS</option></select></div>
           <div class="field field-port"><label for="domain-port">Internal port</label><input id="domain-port" type="number" min="1" max="65535" value="80" required /></div>
-          <button class="button button-positive" type="submit">Add domain</button>
+          <div class="domain-form-actions"><button id="domain-submit" class="button button-positive" type="submit">Add domain</button><button id="domain-cancel" class="button button-secondary" type="button" hidden>Cancel</button></div>
         </form>
         <div id="domain-list" class="item-list"></div>
       </section>
