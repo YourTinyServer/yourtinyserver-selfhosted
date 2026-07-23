@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Manage instance - YourTinyServer</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/instance.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div><strong>YourTinyServer</strong><span>Self-Hosted</span></div>
+      <a href="/">Instances</a>
+    </header>
+
+    <main>
+      <p class="back-link"><a href="/">Back to instances</a></p>
+      <header class="page-header instance-heading">
+        <div><h1 id="instance-name">Loading instance...</h1><p id="instance-meta"></p></div>
+        <button id="refresh-button" class="button button-secondary" type="button">Refresh</button>
+      </header>
+
+      <div id="notification" class="notification" role="status" hidden></div>
+
+      <nav id="instance-controls" class="control-bar" aria-label="Instance controls"></nav>
+
+      <section aria-labelledby="metrics-heading">
+        <h2 id="metrics-heading">Live resources</h2>
+        <div class="metrics-grid">
+          <div class="metric"><span>CPU</span><strong id="metric-cpu">0%</strong><progress id="cpu-progress" max="100" value="0"></progress></div>
+          <div class="metric"><span>Memory</span><strong id="metric-memory">0 B / 0 B</strong><progress id="memory-progress" max="100" value="0"></progress></div>
+          <div class="metric"><span>Disk</span><strong id="metric-disk">0 B / 0 B</strong><progress id="disk-progress" max="100" value="0"></progress></div>
+          <div class="metric"><span>Network</span><strong id="metric-network">0 B/s</strong><small id="metric-network-total">0 B transferred</small></div>
+        </div>
+      </section>
+
+      <div class="detail-grid">
+        <section class="panel" aria-labelledby="specs-heading">
+          <h2 id="specs-heading">Access and specifications</h2>
+          <dl id="specifications" class="definition-list"></dl>
+        </section>
+
+        <section class="panel" aria-labelledby="snapshots-heading">
+          <div class="section-header"><h2 id="snapshots-heading">Snapshots</h2><span id="snapshot-count">0 / 0</span></div>
+          <form id="snapshot-form" class="compact-form">
+            <div class="field"><label for="snapshot-name">Snapshot name</label><input id="snapshot-name" maxlength="48" pattern="[a-z0-9][a-z0-9-]{0,47}" placeholder="before-update" required /></div>
+            <button class="button button-secondary" type="submit">Create snapshot</button>
+          </form>
+          <div id="snapshot-list" class="item-list"></div>
+        </section>
+      </div>
+
+      <section class="panel" aria-labelledby="domains-heading">
+        <div class="section-header"><div><h2 id="domains-heading">Web domains</h2><p>Point a DNS-only A record to this server, then route HTTPS traffic to an application port inside the instance.</p></div></div>
+        <form id="domain-form" class="domain-form">
+          <div class="field"><label for="domain-name">Domain</label><input id="domain-name" type="text" placeholder="app.example.com" required /></div>
+          <div class="field field-port"><label for="domain-port">Internal port</label><input id="domain-port" type="number" min="1" max="65535" value="80" required /></div>
+          <button class="button button-positive" type="submit">Add domain</button>
+        </form>
+        <div id="domain-list" class="item-list"></div>
+      </section>
+
+      <section class="danger-zone" aria-labelledby="danger-heading">
+        <div><h2 id="danger-heading">Delete instance</h2><p>Permanently removes the instance, snapshots, domain routes and all stored data.</p></div>
+        <button id="delete-instance" class="button button-negative" type="button">Delete instance</button>
+      </section>
+    </main>
+
+    <dialog id="confirm-dialog">
+      <form method="dialog">
+        <h2 id="confirm-title">Confirm action</h2>
+        <p id="confirm-description"></p>
+        <div class="dialog-actions">
+          <button class="button button-secondary" value="cancel">Cancel</button>
+          <button id="confirm-action" class="button button-negative" value="confirm">Confirm</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>
