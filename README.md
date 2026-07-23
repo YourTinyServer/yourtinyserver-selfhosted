@@ -1,6 +1,6 @@
 # YourTinyServer Self-Hosted
 
-A free, single-administrator LXD dashboard for your own Ubuntu server. It has no accounts, payments, billing, renewals or external database.
+A free, single-administrator LXD dashboard for your own server. It has no accounts, payments, billing, renewals or external database.
 
 Use paid version if you don't have your own Server or if you want to deploy an instance faster: [yourtinyserver.com](https://yourtinyserver.com).
 
