@@ -8,7 +8,7 @@ const elements = {
   snapshotForm: document.querySelector("#snapshot-form"), snapshotName: document.querySelector("#snapshot-name"),
   snapshotCount: document.querySelector("#snapshot-count"), snapshotList: document.querySelector("#snapshot-list"),
   domainForm: document.querySelector("#domain-form"), domainName: document.querySelector("#domain-name"),
-  domainProtocol: document.querySelector("#domain-protocol"), domainPort: document.querySelector("#domain-port"),
+  domainPort: document.querySelector("#domain-port"),
   domainSubmit: document.querySelector("#domain-submit"), domainCancel: document.querySelector("#domain-cancel"), domainList: document.querySelector("#domain-list"),
   reinstallForm: document.querySelector("#reinstall-form"), reinstallDistribution: document.querySelector("#reinstall-distribution"),
   deleteInstance: document.querySelector("#delete-instance"), dialog: document.querySelector("#confirm-dialog"),
@@ -89,7 +89,7 @@ function renderSnapshots(instance) {
 function renderDomains(domains) {
   elements.domainList.innerHTML = domains.length ? domains.map((route) => `
     <div class="list-item">
-      <div><strong>${route.status === "active" ? `<a href="https://${escapeHtml(route.domain)}" target="_blank" rel="noreferrer">${escapeHtml(route.domain)}</a>` : escapeHtml(route.domain)}</strong><small>${escapeHtml((route.targetProtocol || "http").toUpperCase())} to internal port ${route.targetPort} - ${escapeHtml(route.status)}</small>${route.errorMessage ? `<small class="error-text">${escapeHtml(route.errorMessage)}</small>` : ""}</div>
+      <div><strong>${route.status === "active" ? `<a href="https://${escapeHtml(route.domain)}" target="_blank" rel="noreferrer">${escapeHtml(route.domain)}</a>` : escapeHtml(route.domain)}</strong><small>Internal port ${route.targetPort} - ${escapeHtml(route.status)}</small>${route.errorMessage ? `<small class="error-text">${escapeHtml(route.errorMessage)}</small>` : ""}</div>
       <div class="row-actions"><button class="button button-secondary button-small" data-domain-edit="${escapeHtml(route.id)}">Edit routing</button><button class="button button-negative button-small" data-domain-delete="${escapeHtml(route.id)}">Remove</button></div>
     </div>`).join("") : '<p class="empty-state">No web domains configured.</p>';
 }
@@ -198,7 +198,7 @@ elements.domainForm.addEventListener("submit", (event) => {
   const domain = elements.domainName.value.trim().toLowerCase();
   const editing = editingDomainId;
   void mutate(`/api/instances/${encodeURIComponent(name)}/domains`, {
-    method: editing ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: editing, domain, targetProtocol: elements.domainProtocol.value, targetPort: Number(elements.domainPort.value) }),
+    method: editing ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: editing, domain, targetPort: Number(elements.domainPort.value) }),
   }, editing ? `${domain} routing updated.` : `${domain} is online with HTTPS.`).then(() => resetDomainForm());
 });
 
@@ -206,7 +206,6 @@ function resetDomainForm() {
   editingDomainId = null;
   elements.domainName.value = "";
   elements.domainName.readOnly = false;
-  elements.domainProtocol.value = "http";
   elements.domainPort.value = "80";
   elements.domainSubmit.textContent = "Add domain";
   elements.domainCancel.hidden = true;
@@ -223,7 +222,6 @@ elements.domainList.addEventListener("click", (event) => {
     editingDomainId = route.id;
     elements.domainName.value = route.domain;
     elements.domainName.readOnly = true;
-    elements.domainProtocol.value = route.targetProtocol || "http";
     elements.domainPort.value = String(route.targetPort);
     elements.domainSubmit.textContent = "Save routing";
     elements.domainCancel.hidden = false;
