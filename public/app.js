@@ -133,11 +133,13 @@ async function load(showError = true) {
     if (data.profiles.some((profile) => profile.name === current)) profileSelect.value = current;
     renderInstances(data.instances, data.activeOperation, lxdOperations);
     updateControls();
-    if (data.activeOperation?.type === "create" && shownOperation !== data.activeOperation.id) {
-      shownOperation = data.activeOperation.id;
+    const activeOperationKey = data.activeOperation ? `${data.activeOperation.id}:${data.activeOperation.status}` : null;
+    const lastOperationKey = data.lastOperation ? `${data.lastOperation.id}:${data.lastOperation.status}` : null;
+    if (data.activeOperation?.type === "create" && shownOperation !== activeOperationKey) {
+      shownOperation = activeOperationKey;
       notify(`${data.activeOperation.name} is being created. The first Ubuntu download can take several minutes.`, "information");
-    } else if (data.lastOperation?.id && shownOperation !== data.lastOperation.id) {
-      shownOperation = data.lastOperation.id;
+    } else if (data.lastOperation?.id && shownOperation !== lastOperationKey) {
+      shownOperation = lastOperationKey;
       if (data.lastOperation.status === "failed") {
         notify(data.lastOperation.error || `${data.lastOperation.name} failed.`, "negative");
       } else if (data.lastOperation.type === "create") {
