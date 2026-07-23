@@ -2,7 +2,7 @@
 
 A free, single-administrator LXD dashboard for your own Ubuntu server. It has no accounts, payments, billing, renewals or external database.
 
-Use paid version if you dont have a VPS or time: [yourtinyserver.com](https://yourtinyserver.com).
+Use paid version if you don't have your own Server or if you want to deploy an instance faster: [yourtinyserver.com](https://yourtinyserver.com).
 
 ## Included
 
